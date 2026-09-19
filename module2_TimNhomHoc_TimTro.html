@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flow - Module 2: Smart Matching System & Moderation</title>
+    <!-- Import Mermaid.js v10 -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: 25,
+                rankSpacing: 30
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 16px 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            max-width: 98vw;
+            max-height: 98vh;
+            overflow: auto;
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 1.35rem;
+            margin: 0 0 4px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0 0 12px 0;
+            font-weight: 500;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* CSS MERMAID OVERRIDE */
+        .mermaid .node rect, 
+        .mermaid .node circle, 
+        .mermaid .node polygon {
+            rx: 6px !important;
+            ry: 6px !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .node .label {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            padding: 6px 10px !important;
+            line-height: 1.25 !important;
+        }
+        .mermaid .edgeLabel {
+            font-size: 9.5px !important;
+            font-weight: bold !important;
+            background-color: #ffffff !important;
+            padding: 2px 5px !important;
+            border-radius: 4px;
+        }
+        .mermaid .flowchart-link {
+            stroke: #334155 !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .marker {
+            fill: #334155 !important;
+            stroke: #334155 !important;
+        }
+        .mermaid .cluster-label {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            fill: #0f172a !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 2 (SMART MATCHING SYSTEM & MODERATION)</h1>
+    <p class="subtitle">Two-Tier Matching (Cosine Similarity), Real-time Chat & Báo Cáo / Kiểm Duyệt Bài Đăng Vi Phạm</p>
+
+    <div class="mermaid">
+    flowchart TB
+        %% SUBGRAPH 1: INPUT & CONFIGURATION
+        subgraph CONFIG ["1. THIẾT LẬP TIÊU CHÍ VECTOR & LỌC FEED"]
+            direction TB
+            Start([Đã Đăng Nhập]) --> AccessChoice{Chọn Màn Hình}
+            
+            %% Luồng 1A: Feed Truyền Thống
+            AccessChoice -- Trang chủ Campus Feed --> ManualFeed["Vào Feed Truyền Thống"]
+            ManualFeed --> FilterBar["Bộ Lọc Thủ Công: Môn học / Giá / Khu vực"]
+            FilterBar --> DB_GetPosts[("(Query SQL Feed DB)")]
+            
+            %% Luồng 1B: Smart Match
+            AccessChoice -- Tab Smart Match --> NavMatch["Vào Tab Radar Matching"]
+            NavMatch --> ChooseType{Chọn Mục Tiêu}
+            ChooseType -- Tìm Cạ Học --> FormStudy["Nhập: Môn, Lịch Rảnh, Mục Tiêu"]
+            ChooseType -- Tìm Ở Ghép --> FormRoom["Nhập: Khu Vực, Ngân Sách, Lối Sống"]
+            FormStudy --> SavePref["Chuyển đổi Feature Vector"]
+            FormRoom --> SavePref
+            SavePref --> DB_Pref[("(Lưu Profile Vector DB)")]
+        end
+
+        %% SUBGRAPH 2: BACKEND ENGINE & THUẬT TOÁN
+        subgraph ENGINE ["2. THUẬT TOÁN COSINE SIMILARITY & PHÂN NGƯỠNG"]
+            direction TB
+            DB_Pref --> FetchCandidates["Lấy danh sách Candidate Vector từ DB"]
+            FetchCandidates --> RunAlgo["Chạy Thuật toán Cosine Similarity"]
+            RunAlgo --> CalcScore{Kiểm Tra Match Score %}
+            
+            %% Thống nhất 3 Ngưỡng Match
+            CalcScore -- "Score < 40% (Thấp)" --> FallbackNotice["Kích hoạt Fallback: Không đẩy vào Radar Card"]
+            FallbackNotice --> FallbackOptions{Lựa chọn người dùng}
+            FallbackOptions -. Chỉnh sửa Tiêu chí .-> NavMatch
+            FallbackOptions -. Về lướt Feed thủ công .-> ManualFeed
+            
+            CalcScore -- "Score 40% - 79% (Trung bình)" --> RankList["Đưa vào Radar List (Không gửi Push Noti)"]
+            
+            CalcScore -- "Score >= 80% (Cạ Cứng)" --> AutoSmartNoti["PUSH NOTIFICATION: Phát hiện ứng viên trùng khớp cao!"]
+            AutoSmartNoti --> RankList
+        end
+
+        %% SUBGRAPH 3: KẾT NỐI REALTIME & CHAT
+        subgraph ACTION ["3. TƯƠNG TÁC, KẾT NỐI REAL-TIME & CHAT 1:1"]
+            direction TB
+            DB_GetPosts --> DisplayManualList["Hiển thị Bài Đăng (Đính kèm Badge % Match)"]
+            DisplayManualList --> SelectCard["Xem Chi Tiết Bài Đăng"]
+            
+            RankList --> ViewCard["Hiển thị Danh Sách Radar Cards (Giảm dần theo %)"]
+            
+            SelectCard --> UserAction{Thao Tác Sinh Viên}
+            ViewCard --> UserAction
+            
+            UserAction -. Bỏ qua / Tìm lại .-> NavMatch
+            UserAction -- "Gửi Yêu Cầu Kết Nối" --> SendReq["Tạo Request Pending"]
+            SendReq --> SaveReqDB[("(Lưu Table Connections DB)")]
+            SaveReqDB --> PushRequestNoti["SignalR: Bắn Noti tới Đối Tác"]
+            
+            PushRequestNoti --> TargetResp{Đối Tác Phản Hồi}
+            TargetResp -- Từ Chối --> NotiFail["Cập nhật DB: Rejected"]
+            NotiFail -. Quay lại .-> ViewCard
+            TargetResp -- Đồng Ý --> CreateMatch[("(Cập nhật DB: Matched)")]
+            CreateMatch --> DirectChat["Kích hoạt WebSockets / Mở Box Chat 1:1"]
+            DirectChat --> EndState([Hoàn Thành Kết Nối])
+        end
+
+        %% SUBGRAPH 4: REPORT BÀI ĐĂNG & MODERATION
+        subgraph REPORT ["4. BÁO CÁO VI PHẠM & KIỂM DUYỆT BÀI ĐĂNG"]
+            direction TB
+            UserAction -- "Báo Cáo Bài Đăng" --> OpenReportModal["Mở Modal Report Bài Đăng"]
+            OpenReportModal --> SelectReason["Chọn Lý Do: Spam / Lừa Đảo / Thông Tin Sai..."]
+            SelectReason --> SubmitReport["Gửi Báo Cáo Vi Phạm"]
+            SubmitReport --> SaveReportDB[("(Lưu vào Table Reports DB)")]
+            
+            SaveReportDB --> NotiAdmin["SignalR: Bắn Notification đến Admin Dashboard"]
+            NotiAdmin --> AdminReview{Admin Kiểm Duyệt}
+            
+            AdminReview -- Báo cáo Sai / Hợp lệ --> DismissReport["Bỏ Qua / Đóng Báo Cáo"]
+            DismissReport --> CloseModal["Thông báo: Báo cáo đã được ghi nhận"]
+            
+            AdminReview -- Xác nhận Vi Phạm --> HidePost[("(Ẩn / Xóa Bài Đăng trong DB)")]
+            HidePost --> PenalizeAuthor[("(Trừ ReputationPoint của Tác giả)")]
+            PenalizeAuthor --> NotiAuthor["Gửi Noti Cảnh Báo Vi Phạm đến Tác Giả"]
+            NotiAuthor --> CloseModal
+            CloseModal -. Quay lại Feed .-> ManualFeed
+        end
+
+        %% CSS CLASS STYLING
+        classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
+        classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
+        classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
+        classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+        classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
+        classDef alert fill:#faf5ff,stroke:#a855f7,color:#6b21a8;
+
+        class Start,EndState startEnd;
+        class AccessChoice,ChooseType,CalcScore,FallbackOptions,UserAction,TargetResp,AdminReview decision;
+        class ManualFeed,FilterBar,DisplayManualList,NavMatch,FormStudy,FormRoom,SavePref,FetchCandidates,RunAlgo,RankList,SelectCard,ViewCard,SendReq,PushRequestNoti,NotiFail,DirectChat,OpenReportModal,SelectReason,SubmitReport,NotiAdmin,DismissReport,NotiAuthor,CloseModal process;
+        class FallbackNotice,HidePost,PenalizeAuthor error;
+        class DB_Pref,SaveReqDB,CreateMatch,DB_GetPosts,SaveReportDB db;
+        class AutoSmartNoti alert;
+    </div>
+</div>
+
+</body>
+</html>

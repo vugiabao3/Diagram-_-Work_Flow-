@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flow - Module 3: Campus Lost & Found</title>
+    <!-- Import Mermaid.js -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: 25,
+                rankSpacing: 35
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            display: inline-block;
+            max-width: 98vw;
+            max-height: 96vh;
+            overflow: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 1.3rem;
+            margin: 0 0 4px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* ĐỊNH DẠNG HỘP VÀ CHỮ TO RÕ NẾT */
+        .mermaid .node rect, 
+        .mermaid .node circle, 
+        .mermaid .node polygon {
+            rx: 6px !important;
+            ry: 6px !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .node .label {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            padding: 6px 10px !important;
+            line-height: 1.3 !important;
+        }
+        .mermaid .edgeLabel {
+            font-size: 10px !important;
+            font-weight: bold !important;
+            background-color: #ffffff !important;
+            padding: 2px 5px !important;
+            border-radius: 4px;
+        }
+        .mermaid .flowchart-link {
+            stroke: #334155 !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .marker {
+            fill: #334155 !important;
+            stroke: #334155 !important;
+        }
+        .mermaid .cluster-label {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            fill: #1e293b !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 3</h1>
+    <p class="subtitle">Campus Lost & Found System (Quản lý Đồ thất lạc & Google Maps API)</p>
+
+    <div class="mermaid">
+    flowchart TB
+        %% SUBGRAPH 1: AUTH & ĐĂNG BÀI
+        subgraph STEP1 ["1. XÁC THỰC & KHỞI TẠO BÀI ĐĂNG (KÈM CÂU HỎI BÍ MẬT)"]
+            direction TB
+            Start([Login Thành Công]) --> VerifyJWT{Xác thực JWT Token}
+            VerifyJWT -- Token invalid --> RedirectLogin["Trả về 401 / Login"]
+            VerifyJWT -- Token valid --> AccessModule["Vào Tab Lost & Found"] --> PostType{Chọn Thao Tác}
+            PostType -- Báo Mất Đồ --> FormLost["Nhập Thông tin + Thời gian mất"]
+            PostType -- Nhặt Được Đồ --> FormFound["Nhập Thông tin + Tạo Câu hỏi Bí mật"]
+        end
+
+        %% SUBGRAPH 2: MAPS, UPLOAD & MATCHING ENGINE
+        subgraph STEP2 ["2. ĐỊNH VỊ MAPS, UPLOAD ẢNH & THUẬT TOÁN KẾT NỐI"]
+            direction TB
+            FormLost --> CallMapAPI["Gọi Google Maps JS API"]
+            FormFound --> CallMapAPI
+            CallMapAPI --> PinLocation["Ghim Tọa độ Lat-Lng trên Maps"] --> UploadImg["Up ảnh Cloudinary / S3"]
+            
+            UploadImg --> CheckMedia{Upload Media Succesful?}
+            CheckMedia -- Lỗi File / Timeout --> ShowMediaErr["Báo lỗi Form & Yêu cầu thử lại"]
+            ShowMediaErr -. Thử lại .-> FormLost
+            
+            CheckMedia -- Hợp lệ --> SaveItemDB[("(Lưu Bài đăng & Câu hỏi DB)")]
+            SaveItemDB --> RunMatching["Chạy Algo: Geo-distance + TF-IDF Text"]
+            RunMatching --> MatchScore{Score >= 80%?}
+            MatchScore -- Không --> DisplayMap["Hiển thị Pin vị trí lên Bản đồ Campus"]
+            MatchScore -- Có --> PushAlert["Gửi Notification Auto-Match cho 2 bên"] --> DisplayMap
+        end
+
+        %% SUBGRAPH 3: DUYỆT CÂU HỎI, XỬ LÝ FAIL & ĐÓNG TICKET
+        subgraph STEP3 ["3. XÁC MINH CÂU HỎI, MESSENGER CHAT, LỖI TRAO TRẢ & ĐÓNG TICKET"]
+            direction TB
+            DisplayMap --> UserAction{Thao Tác Bài Đăng}
+            UserAction -- Lọc / Tìm kiếm --> FilterMap["Lọc theo Tòa nhà / Danh mục"]
+            FilterMap -. Cập nhật UI .-> DisplayMap
+            
+            UserAction -- Báo cáo Spam/Giả mạo --> ReportPost["Gửi Flag Report đến Admin"] --> HidePost[("(Tạm ẩn bài / Chờ duyệt)")] --> CloseTicket
+            UserAction -- Chủ bài tự Hủy --> CancelPost["Cập nhật Status = CANCELLED"] --> CloseTicket
+            
+            %% Quy trình xác minh bằng câu hỏi
+            UserAction -- Người mất bấm 'Yêu cầu nhận' --> OpenQuestionForm["BƯỚC 3.1: Hiển thị Câu hỏi Bí mật"]
+            OpenQuestionForm --> SubmitAnswer["BƯỚC 3.2: Người mất gửi Câu trả lời"]
+            SubmitAnswer --> NotiFinder["Gửi Notification cho Người nhặt"]
+            NotiFinder --> ReviewAnswer{BƯỚC 3.3: Người nhặt Duyệt Câu trả lời?}
+            
+            ReviewAnswer -- Sai / Không đúng --> RejectClaim["Từ chối Yêu cầu / Block Spammer"]
+            RejectClaim -. Quay lại .-> DisplayMap
+            
+            ReviewAnswer -- Duyệt Chấp Nhận --> OpenMessenger["BƯỚC 3.4: TỰ ĐỘNG MỞ Khung Chat Messenger"]
+            OpenMessenger --> DirectChat["BƯỚC 3.5: Chat hẹn thời gian & địa điểm trao trả"]
+            
+            DirectChat --> HandoverResult{BƯỚC 3.6: Kết quả gặp mặt thực tế?}
+            HandoverResult -- Nhầm đồ / Không trả --> FailHandover["Hủy yêu cầu kết nối"]
+            FailHandover -. Quay lại .-> DisplayMap
+            
+            HandoverResult -- Trả đồ thành công --> ConfirmReturn["BƯỚC 3.7: Người nhặt bấm 'Xác nhận đã trả đồ'"]
+            ConfirmReturn --> AddRepPoints["BƯỚC 3.8: Cộng Điểm Uy tín Reputation Points cho Finder"]
+            AddRepPoints --> RateUser["BƯỚC 3.9: Người nhận Đánh giá Rating & Cảm ơn"]
+            RateUser --> UpdateDB[("(BƯỚC 3.10: Cập nhật Status = RETURNED & Lưu History DB)")]
+            UpdateDB --> CloseTicket([ĐÓNG TICKET: Hoàn tất Quy trình])
+        end
+
+        %% Style Classes
+        classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
+        classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
+        classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
+        classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+        classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
+
+        class Start,CloseTicket startEnd;
+        class VerifyJWT,PostType,CheckMedia,MatchScore,UserAction,ReviewAnswer,HandoverResult decision;
+        class AccessModule,FormLost,FormFound,CallMapAPI,PinLocation,UploadImg,RunMatching,PushAlert,DisplayMap,FilterMap,OpenQuestionForm,SubmitAnswer,NotiFinder,OpenMessenger,DirectChat,ConfirmReturn,AddRepPoints,RateUser,ReportPost,CancelPost process;
+        class RedirectLogin,ShowMediaErr,RejectClaim,FailHandover error;
+        class SaveItemDB,UpdateDB,HidePost db;
+    </div>
+</div>
+
+</body>
+</html>

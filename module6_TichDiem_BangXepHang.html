@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flow - Module 6: Gamification & Leaderboard</title>
+    <!-- Import Mermaid.js v10 -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: 35,
+                rankSpacing: 45
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border: 2px solid #cbd5e1;
+            border-radius: 16px;
+            display: inline-block;
+            width: 96vw;
+            max-height: 94vh;
+            overflow: auto;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 1.8rem;
+            margin: 0 0 6px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #475569;
+            font-size: 1.1rem;
+            margin: 0 0 24px 0;
+            font-weight: 600;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        /* TĂNG KÍCH THƯỚC TO RÕ DỄ NHÌN TRÊN MÀN HÌNH MÁY TÍNH */
+        .mermaid .node rect, 
+        .mermaid .node circle, 
+        .mermaid .node polygon {
+            rx: 8px !important;
+            ry: 8px !important;
+            stroke-width: 2.5px !important;
+        }
+        .mermaid .node .label {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            padding: 10px 14px !important;
+            line-height: 1.4 !important;
+        }
+        .mermaid .edgeLabel {
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            background-color: #ffffff !important;
+            padding: 4px 8px !important;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+        }
+        .mermaid .flowchart-link {
+            stroke: #334155 !important;
+            stroke-width: 2.5px !important;
+        }
+        .mermaid .marker {
+            fill: #334155 !important;
+            stroke: #334155 !important;
+            transform: scale(1.2);
+        }
+        .mermaid .cluster-label {
+            font-size: 16px !important;
+            font-weight: 800 !important;
+            fill: #0f172a !important;
+        }
+        .mermaid .cluster rect {
+            stroke-width: 2px !important;
+            rx: 10px !important;
+            ry: 10px !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 6</h1>
+    <p class="subtitle">Bảng Xếp Hạng & Điểm Thưởng Gamification (Reward, Penalties & Leaderboard)</p>
+
+    <div class="mermaid">
+    flowchart TB
+        Start([Tương tác ứng dụng]) --> TriggerEngine{Sự kiện Hệ thống}
+
+        %% SUBGRAPH 1: CƠ CHẾ TÍCH ĐIỂM & GIAO DỊCH
+        subgraph EARN ["1. CƠ CHẾ CỘNG ĐIỂM & GIAO DỊCH TÀI LIỆU"]
+            direction TB
+            TriggerEngine -- Đăng ký mới --> BonusNew["Cộng +100 điểm Welcome"]
+            TriggerEngine -- Trả đồ thất lạc --> BonusLostFound["Cộng +50 điểm thành công"]
+            TriggerEngine -- Đổi / Tặng sách --> BonusBook["Cộng +20 điểm giao dịch"]
+            TriggerEngine -- Tài liệu nhận Vote 5⭐ --> BonusVote5["Cộng +10 điểm / lượt vote"]
+            
+            TriggerEngine -- Tải tài liệu trả phí --> DocTransfer{Check dư điểm User tải?}
+            DocTransfer -- Không đủ điểm --> ErrDocPoints["Báo lỗi: Không đủ điểm để tải"]
+            DocTransfer -- Đủ điểm --> ExecTransfer["Trừ X điểm người tải & Cộng +X điểm người đăng"]
+            
+            BonusNew --> UpdatePointsDB[("(Cập nhật ReputationPoints & Log Lịch sử Điểm)")]
+            BonusLostFound --> UpdatePointsDB
+            BonusBook --> UpdatePointsDB
+            BonusVote5 --> UpdatePointsDB
+            ExecTransfer --> UpdatePointsDB
+        end
+
+        %% SUBGRAPH 2: CƠ CHẾ PHẠT ĐIỂM & ANTI-SPAM
+        subgraph SANCTION ["2. CƠ CHẾ PHẠT ĐIỂM & ANTI-SPAM (NO AI)"]
+            direction TB
+            %% A. Phạt do Báo cáo (Admin Manual)
+            TriggerEngine -- User bấm Báo cáo Bài viết --> SendReport["Đưa bài viết vào Queue chờ Admin duyệt"]
+            SendReport --> AdminReview{Admin Phê duyệt Vi phạm?}
+            AdminReview -- Từ chối --> DismissReport["Bỏ qua báo cáo"]
+            AdminReview -- Duyệt vi phạm --> AdminPenalize["Ẩn/Xóa bài đăng & Trừ điểm chủ bài (-50đ lừa đảo / -20đ spam)"]
+
+            %% B. Phạt do Downvote Cộng đồng
+            TriggerEngine -- User Downvote 1⭐/2⭐ Tài liệu --> DownvoteProc["Backend tự động trừ -10 điểm người đăng"]
+            DownvoteProc --> CheckConsecutive{Tài liệu bị 3 lần 1⭐ liên tiếp?}
+            CheckConsecutive -- Có --> AutoHideDoc["Tự động Ẩn bài tài liệu & Phạt thêm -30 điểm"]
+            CheckConsecutive -- Không --> PassDownvote[Cập nhật điểm tài liệu]
+
+            %% C. Anti-Spam C# Backend (No AI)
+            TriggerEngine -- User Đăng bài / Gửi Chat --> RateLimitCheck{C# Rate Limiter Check}
+            RateLimitCheck -- Đăng > 3 bài / 1 phút --> MutePost["Phạt -10 điểm & Khóa quyền đăng bài 15 phút"]
+            RateLimitCheck -- Chat > 10 tin / 10 giây --> MuteChat["Tạm thời Khóa quyền Chat 5 phút"]
+
+            AdminPenalize --> DeductPointsDB[("(Cập nhật Trừ điểm DB & Khóa Tính năng)")]
+            AutoHideDoc --> DeductPointsDB
+            MutePost --> DeductPointsDB
+            MuteChat --> DeductPointsDB
+        end
+
+        %% SUBGRAPH 3: BẢNG XẾP HẠNG (LEADERBOARD)
+        subgraph LEADERBOARD ["3. BẢNG XẾP HẠNG & VINH DANH (LEADERBOARD)"]
+            direction TB
+            UpdatePointsDB --> SyncLeaderboard["Trigger Backend Sync Điểm"]
+            DeductPointsDB --> SyncLeaderboard
+            
+            SyncLeaderboard --> CronJobLeaderboard[("(Scheduled Job: Tổng hợp Điểm Tuần / Tháng / Quý / Năm)")]
+            CronJobLeaderboard --> RenderLeaderboard["Cập nhật TOP Sinh viên Cống hiến"]
+            
+            RenderLeaderboard --> UserViewBoard[User Xem Bảng Xếp Hạng trên App]
+            UserViewBoard --> DisplayBadges["Hiển thị Danh hiệu / Huy hiệu Uy tín trên Profile"]
+            DisplayBadges --> EndState([Hoàn thành Luồng Gamification])
+        end
+
+        %% Hồi đáp trạng thái lỗi
+        ErrDocPoints -. Báo lỗi .-> Start
+        DismissReport -. Hoàn tất .-> Start
+
+        %% Apply Styling Classes
+        classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
+        classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
+        classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
+        classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+        classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
+        classDef bonus fill:#faf5ff,stroke:#a855f7,color:#6b21a8;
+
+        class Start,EndState startEnd;
+        class TriggerEngine,DocTransfer,AdminReview,CheckConsecutive,RateLimitCheck decision;
+        class BonusNew,BonusLostFound,BonusBook,BonusVote5,ExecTransfer,SendReport,DownvoteProc,PassDownvote,SyncLeaderboard,CronJobLeaderboard,RenderLeaderboard,UserViewBoard,DisplayBadges process;
+        class ErrDocPoints,AdminPenalize,AutoHideDoc,MutePost,MuteChat error;
+        class UpdatePointsDB,DeductPointsDB db;
+        class LEADERBOARD bonus;
+    </div>
+</div>
+
+</body>
+</html>

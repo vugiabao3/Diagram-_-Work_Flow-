@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flow - Module 4: Campus Book & Document Exchange</title>
+    <!-- Import Mermaid.js v10 -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: 25,
+                rankSpacing: 35
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            display: inline-block;
+            max-width: 98vw;
+            max-height: 96vh;
+            overflow: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 1.3rem;
+            margin: 0 0 4px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .mermaid .node rect, 
+        .mermaid .node circle, 
+        .mermaid .node polygon {
+            rx: 6px !important;
+            ry: 6px !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .node .label {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            padding: 6px 10px !important;
+            line-height: 1.3 !important;
+        }
+        
+        .mermaid .edgeLabel {
+            font-size: 10px !important;
+            font-weight: bold !important;
+            background-color: #ffffff !important;
+            padding: 2px 5px !important;
+            border-radius: 4px;
+        }
+        
+        .mermaid .flowchart-link {
+            stroke: #334155 !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .marker {
+            fill: #334155 !important;
+            stroke: #334155 !important;
+        }
+        
+        .mermaid .cluster-label {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            fill: #1e293b !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 4 (PRODUCTION READY)</h1>
+    <p class="subtitle">Campus Book & Document Exchange (Xử lý Fail-safe, Watermark Engine, Rollback & Financial Settlement)</p>
+
+    <div class="mermaid">
+    flowchart TB
+        %% SUBGRAPH 1: ĐĂNG TẢI & VALIDATE
+        subgraph STEP1 ["1. ĐĂNG TẢI TÀI LIỆU / ĐỔI SÁCH GIÁO TRÌNH & VALIDATION"]
+            direction TB
+            Start([Mở Module Tài Liệu]) --> VerifyJWT{Check JWT Token}
+            VerifyJWT -- Invalid / Expired --> RedirectLogin["Trả về 401 / Chuyển hướng Login"]
+            VerifyJWT -- Valid --> SelectMode{Chọn Hình Thức}
+            
+            SelectMode -- Đổi Sách Giấy --> PostBook["Nhập Info: Sách Cần Đổi & Sách Cần Tìm"]
+            SelectMode -- Chia Sẻ Tài Liệu Số --> SelectPricing{Chọn Loại Tài Liệu}
+            
+            SelectPricing -- Miễn phí 0đ --> UploadPDF["Upload File PDF / Docx"]
+            SelectPricing -- Có phí --> SetPrice["Thiết lập Giá Điểm / Xu"] --> UploadPDF
+            
+            UploadPDF --> ValidateFile{Backend C# Validate File}
+            ValidateFile -- Lỗi: Size > 25MB / Encrypted / Format --> ErrFile["Báo Lỗi: File không hợp lệ hoặc bị khóa pass"]
+            ErrFile -. Thử lại .-> UploadPDF
+            ValidateFile -- Hợp lệ --> ProcessCloud["Lưu trữ File Gốc vào Cloud Storage AWS S3"]
+        end
+
+        %% SUBGRAPH 2: BACKEND ENGINE & MATCHING LOOP
+        subgraph STEP2 ["2. C# BACKEND ENGINE & MATCHING LOOP ĐỔI SÁCH CHÉO"]
+            direction TB
+            ProcessCloud --> SaveDocDB[("(Lưu Document & Pricing DB)")]
+            PostBook --> SaveBookDB[("(Lưu Book Inventory DB)")]
+            
+            SaveBookDB --> RunMatchingLoop["Chạy Algo Matching Loop Graph Cycle Finding"]
+            RunMatchingLoop --> DetectLoop{Tìm thấy Chuỗi Đổi Chéo?}
+            
+            DetectLoop -- Có Chuỗi A->B->C --> TriggerExchange["Gửi SignalR Noti Đề xuất Chuỗi Đổi 0đ"]
+            DetectLoop -- Không --> DisplayMarket["Hiển thị Bài đăng trên Sàn Giáo Trình"]
+            TriggerExchange --> DisplayMarket
+            SaveDocDB --> DisplayMarket
+        end
+
+        %% SUBGRAPH 3: LUỒNG TẢI TÀI LIỆU, WATERMARK & TRANSACTION ROLLBACK
+        subgraph STEP3 ["3. TẢI TÀI LIỆU, WATERMARK ENGINE & HOÀN TIỀN / CỘNG ĐIỂM NGƯỜI BÁN"]
+            direction TB
+            DisplayMarket --> UserAction{Thao Tác Sinh Viên}
+            UserAction -- Tìm kiếm / Filter --> FilterDoc["Lọc theo Môn / Khoa / Rating"] --> DisplayMarket
+            
+            UserAction -- Chọn Tải Tài Liệu --> CheckPricing{Tài liệu Có phí?}
+            
+            %% Luồng có phí & Kiểm tra số dư
+            CheckPricing -- Có phí --> CheckBalance{Đủ Điểm / Xu?}
+            CheckBalance -- Không đủ --> NotifRecharge["Báo Lỗi: Số dư Điểm không đủ"] --> DisplayMarket
+            
+            CheckBalance -- Đủ Điểm --> BeginTx["Khởi tạo DB Transaction: Hold Điểm Người Mua"]
+            CheckPricing -- Miễn phí --> BeginTx
+            
+            BeginTx --> CSharpWatermark["C# Engine iText Chèn Watermark: MSSV + Email"]
+            CSharpWatermark --> CheckWmResult{Watermark Thành Công?}
+            
+            %% Xử lý Fail khi Watermark Lỗi
+            CheckWmResult -- Lỗi Corrupted PDF --> RollbackTx["ROLLBACK TRANSACTION: Hoàn lại Điểm Người Mua"] --> ErrWatermark["Báo Lỗi: Hệ thống không thể xử lý File"] --> DisplayMarket
+            
+            %% Thành công & Thanh toán chuyển điểm
+            CheckWmResult -- Thành công --> CommitTx["COMMIT TRANSACTION: Trừ điểm Người Mua & CỘNG ĐIỂM NGƯỜI BÁN"]
+            CommitTx --> DownloadSuccess["Tải File PDF đã đóng dấu thành công"]
+            DownloadSuccess --> AddUploaderPoints["Cộng +10 Điểm Uy Tín Cống Hiến cho Người Bán"]
+            AddUploaderPoints --> RateDoc["Đánh giá Rating 1-5 Star & Review Tài Liệu"]
+        end
+
+        %% SUBGRAPH 4: GIAO DỊCH SÁCH GIẤY & REPORT
+        subgraph STEP4 ["4. GIAO DỊCH SÁCH GIẤY, HỦY KÈO & REPORT TÀI LIỆU RÁC"]
+            direction TB
+            UserAction -- Chấp Nhận Đổi Sách --> SwapOffer["Gửi Yêu Cầu Đổi Sách"]
+            SwapOffer --> TargetSwapResp{Đối Tác Phản Hồi}
+            
+            TargetSwapResp -- Từ Chối / Hủy Kèo --> CancelSwap["Cập nhật DB: Cancelled"] --> DisplayMarket
+            TargetSwapResp -- Chấp Nhận --> ConfirmSwap["Xác nhận Khung Giờ & Địa Điểm Gặp"]
+            ConfirmSwap --> SwapSuccess["Sinh Viên Gặp Mặt Trao Đổi Sách Giấy"]
+            SwapSuccess --> AddSwapPoints["Cộng +15 Điểm Uy Tín cho cả 2 Bên"] --> UpdateDocDB
+            
+            %% Luồng Report Vi Phạm Tài Liệu
+            UserAction -- Báo Cáo Tài Liệu Rác --> FlagDoc["Gửi Báo Cáo Vi Phạm Rác / Bản quyền"]
+            FlagDoc --> SaveReportDB[("(Lưu Reports DB)")] --> AdminReview["Admin Review & Lock Document"]
+            
+            RateDoc --> UpdateDocDB[("(Cập nhật Rating, History & Point DB)")]
+            UpdateDocDB --> CloseTicket([HOÀN TẤT GIAO DỊCH])
+            AdminReview --> CloseTicket
+        end
+
+        %% Style Classes
+        classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
+        classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
+        classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
+        classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+        classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
+
+        class Start,CloseTicket startEnd;
+        class VerifyJWT,SelectMode,SelectPricing,ValidateFile,DetectLoop,UserAction,CheckPricing,CheckBalance,CheckWmResult,TargetSwapResp decision;
+        class PostBook,UploadPDF,SetPrice,ProcessCloud,RunMatchingLoop,TriggerExchange,DisplayMarket,FilterDoc,BeginTx,CSharpWatermark,CommitTx,DownloadSuccess,AddUploaderPoints,RateDoc,SwapOffer,ConfirmSwap,SwapSuccess,AddSwapPoints,FlagDoc,AdminReview process;
+        class RedirectLogin,ErrFile,NotifRecharge,RollbackTx,ErrWatermark,CancelSwap error;
+        class SaveDocDB,SaveBookDB,SaveReportDB,UpdateDocDB db;
+    </div>
+</div>
+
+</body>
+</html>

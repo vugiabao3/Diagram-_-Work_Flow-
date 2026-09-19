@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flow - Module 1</title>
+    <!-- Import Mermaid.js -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis', // Đường cong uốn lượn mượt mà, không cắt ngang hộp
+                nodeSpacing: 25, // Khoảng cách ngang tối ưu giữa các nút
+                rankSpacing: 35  // Khoảng cách đứng tối ưu giữa các tầng
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            display: inline-block;
+            max-width: 98vw;
+            max-height: 96vh;
+            overflow: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 1.3rem;
+            margin: 0 0 4px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* ĐỊNH DẠNG HỘP VÀ CHỮ TO RÕ NẾT */
+        .mermaid .node rect, 
+        .mermaid .node circle, 
+        .mermaid .node polygon {
+            rx: 6px !important;
+            ry: 6px !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .node .label {
+            font-size: 11.5px !important;
+            font-weight: 700 !important;
+            padding: 6px 10px !important;
+            line-height: 1.3 !important;
+        }
+        .mermaid .edgeLabel {
+            font-size: 10px !important;
+            font-weight: bold !important;
+            background-color: #ffffff !important;
+            padding: 2px 5px !important;
+            border-radius: 4px;
+        }
+        .mermaid .flowchart-link {
+            stroke: #334155 !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .marker {
+            fill: #334155 !important;
+            stroke: #334155 !important;
+        }
+        .mermaid .cluster-label {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            fill: #0f172a !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 1</h1>
+    <p class="subtitle">Authentication, Welcome Bonus, User Profile & Post Classifier</p>
+
+    <div class="mermaid">
+    flowchart TB
+        Start([Mở App]) --> CheckAuth{Đã đăng nhập?}
+
+        %% SUBGRAPH 1: AUTHENTICATION
+        subgraph AUTH ["1. Authentication"]
+            direction TB
+            CheckAuth -- Chưa --> AuthChoice{Chọn Thao Tác}
+            
+            AuthChoice -- Đăng ký --> Reg_In[Nhập thông tin Email/Pass]
+            Reg_In --> Reg_Val{Regex Check Email .edu.vn}
+            Reg_Val -- Sai --> Reg_Err[Báo lỗi định dạng]
+            Reg_Err -. Thử lại .-> Reg_In
+            Reg_Val -- Đúng --> Reg_DB[(Lưu User DB)]
+
+            AuthChoice -- Đăng nhập --> Log_In[Nhập Email & Pass]
+            Log_In --> Log_Val{Xác thực thông tin}
+            Log_Val -- Sai --> Log_Err[Báo lỗi đăng nhập]
+            Log_Err -. Thử lại .-> Log_In
+            Log_Val -- Đúng --> GenJWT[Tạo JWT Token]
+        end
+
+        %% SUBGRAPH 2: WELCOME BONUS (CỘNG 100 ĐIỂM AUTO)
+        subgraph BONUS ["2. Welcome Bonus Auto"]
+            direction TB
+            Reg_DB --> InitBonus[Gán ReputationPoint = 100]
+            InitBonus --> Bonus_DB[(Ghi lịch sử: +100 Welcome Bonus)]
+        end
+
+        %% Chuyển tiếp sau Đăng ký & Đăng nhập thành công
+        Bonus_DB --> GenJWT
+        GenJWT --> SaveSession[Lưu Token & Role vào Session/Storage]
+
+        CheckAuth -- Rồi --> Home[Campus Feed]
+        SaveSession --> Home
+
+        %% SUBGRAPH 3: USER PROFILE
+        subgraph PROFILE ["3. User Profile & Matching Vector"]
+            direction TB
+            Home --> ProfileNav[Vào Profile]
+            ProfileNav --> ProfChoice{Chọn Thao Tác}
+
+            ProfChoice -- Xem Profile --> ViewProf[Hiển thị Profile & 100 Điểm Uy Tín]
+            ViewProf -. Quay lại .-> Home
+
+            ProfChoice -- Sửa Profile --> Edit_In[Nhập Profile / Avatar / Zalo]
+            Edit_In --> Edit_Val{Check dữ liệu}
+            Edit_Val -- Sai --> Edit_Err[Báo lỗi dữ liệu]
+            Edit_Err -. Thử lại .-> Edit_In
+            Edit_Val -- Đúng --> Edit_DB[(Lưu Profile DB)]
+            Edit_DB -. Hoàn tất .-> Home
+
+            ProfChoice -- Vector Nhu Cầu --> Vector_In[Chọn môn học, Lịch rảnh, Trọ...]
+            Vector_In --> Vector_Proc[Chuẩn hóa Cấu trúc Vector]
+            Vector_Proc --> Vector_DB[(Lưu Vector DB)]
+            Vector_DB -. Hoàn tất .-> Home
+
+            ProfChoice -- Đổi Pass --> Pass_In[Nhập Pass cũ & mới]
+            Pass_In --> Pass_Val{Check mật khẩu}
+            Pass_Val -- Sai --> Pass_Err[Báo lỗi mật khẩu]
+            Pass_Err -. Thử lại .-> Pass_In
+            Pass_Val -- Đúng --> Pass_DB[(Lưu Password DB)]
+            Pass_DB -. Hoàn tất .-> Home
+
+            ProfChoice -- Logout --> Logout[Đăng xuất]
+            Logout --> ClearSession[Xóa JWT / Clear Session]
+        end
+
+        ClearSession -. Quay lại .-> AuthChoice
+
+        %% SUBGRAPH 4: BÀI ĐĂNG & THUẬT TOÁN PHÂN LOẠI
+        subgraph POSTS ["4. Đăng bài & Rule-based Classification"]
+            direction TB
+            Home --> PostNav[Đăng bài mới]
+            PostNav --> Post_In[Nhập Tiêu đề & Nội dung]
+            Post_In --> HasCategory{Có chọn Loại bài?}
+
+            HasCategory -- Có --> CustomType[Gán theo Loại người dùng chọn]
+            
+            HasCategory -- Không --> RuleEngine[Backend: Quét Từ khóa bằng Regex]
+            RuleEngine --> CheckRule{Nội dung chứa từ khóa?}
+
+            CheckRule -- "tìm bạn học, ghép nhóm, môn, thi, đồ án" --> TypeStudy[Gán loại: Tab Tìm bạn học]
+            CheckRule -- "phòng trọ, ở ghép, giá phòng, ban công" --> TypeRoom[Gán loại: Tab Tìm trọ]
+            CheckRule -- Không khớp từ khóa nào --> TypeGeneral[Gán loại: Feed chung]
+
+            CustomType --> SavePostDB[(Lưu Bài đăng & Category vào DB)]
+            TypeStudy --> SavePostDB
+            TypeRoom --> SavePostDB
+            TypeGeneral --> SavePostDB
+            
+            SavePostDB --> RefreshFeed[Cập nhật Feed chung & Tab tương ứng]
+            RefreshFeed -. Hoàn tất .-> Home
+        end
+
+        %% Apply Classes
+        classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
+        classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
+        classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
+        classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+        classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
+        classDef bonus fill:#faf5ff,stroke:#a855f7,color:#6b21a8;
+        classDef algo fill:#fff7ed,stroke:#ea580c,color:#9a3412;
+
+        class Start startEnd;
+        class CheckAuth,AuthChoice,Reg_Val,Log_Val,ProfChoice,Edit_Val,Pass_Val,HasCategory,CheckRule decision;
+        class Home,Reg_In,Log_In,GenJWT,SaveSession,ProfileNav,ViewProf,Edit_In,Pass_In,Logout,ClearSession,Vector_In,Vector_Proc,PostNav,Post_In,CustomType,TypeStudy,TypeRoom,TypeGeneral,RefreshFeed process;
+        class Reg_DB,Edit_DB,Pass_DB,Vector_DB,SavePostDB db;
+        class Reg_Err,Log_Err,Edit_Err,Pass_Err error;
+        class InitBonus,Bonus_DB bonus;
+        class RuleEngine algo;
+    </div>
+</div>
+
+</body>
+</html>

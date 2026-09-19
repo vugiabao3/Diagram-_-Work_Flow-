@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flow - Module 5: Mini Messenger & Notifications</title>
+    <!-- Import Mermaid.js v10 -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: 25,
+                rankSpacing: 35
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            display: inline-block;
+            max-width: 98vw;
+            max-height: 96vh;
+            overflow: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 1.3rem;
+            margin: 0 0 4px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* ĐỊNH DẠNG HỘP VÀ CHỮ TO RÕ NẾT */
+        .mermaid .node rect, 
+        .mermaid .node circle, 
+        .mermaid .node polygon {
+            rx: 6px !important;
+            ry: 6px !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .node .label {
+            font-size: 11.5px !important;
+            font-weight: 700 !important;
+            padding: 6px 10px !important;
+            line-height: 1.3 !important;
+        }
+        .mermaid .edgeLabel {
+            font-size: 10px !important;
+            font-weight: bold !important;
+            background-color: #ffffff !important;
+            padding: 2px 5px !important;
+            border-radius: 4px;
+        }
+        .mermaid .flowchart-link {
+            stroke: #334155 !important;
+            stroke-width: 2px !important;
+        }
+        .mermaid .marker {
+            fill: #334155 !important;
+            stroke: #334155 !important;
+        }
+        .mermaid .cluster-label {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            fill: #0f172a !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 5</h1>
+    <p class="subtitle">Mini Messenger (Chat 1:1, Yêu cầu trò chuyện) & Notification System (Icon Chuông)</p>
+
+    <div class="mermaid">
+    flowchart TB
+        Start([Đăng nhập thành công]) --> ShowHeader[Hiển thị Icon Messenger & Icon Chuông trên Header]
+        ShowHeader --> ConnectSignalR["Tự động kết nối SignalR Hub (Background)"]
+
+        %% SUBGRAPH 1: LUỒNG YÊU CẦU TRÒ CHUYỆN (CHAT REQUEST)
+        subgraph REQUEST ["1. LUỒNG YÊU CẦU TRÒ CHUYỆN (CHAT REQUEST)"]
+            direction TB
+            UserAction[Muốn nhắn tin từ Bài đăng / Matching] --> SendReq[Nút: Gửi Yêu cầu Trò chuyện]
+            SendReq --> SaveReqDB[("(Lưu Yêu cầu vào DB - Trạng thái: Pending)")]
+            SaveReqDB --> PushReqNoti["Gửi Thông báo đến User được yêu cầu"]
+            
+            PushReqNoti --> ReceiverChoice{User B xử lý Yêu cầu?}
+            ReceiverChoice -- Đồng ý --> AcceptReq[("(Update DB: Status = Accepted)")]
+            ReceiverChoice -- Từ chối --> RejectReq[("(Update DB: Status = Rejected)")]
+            
+            RejectReq -. Báo kết quả .-> EndReject[Hủy Yêu cầu - Không mở Chat]
+            AcceptReq --> OpenChatRoom["Mở Khung Chat 1:1 cho cả 2 User"]
+        end
+
+        %% SUBGRAPH 2: MINI MESSENGER (LỊCH SỬ & CHAT REAL-TIME)
+        subgraph MESSENGER ["2. MINI MESSENGER (LỊCH SỬ & NHẮN TIN 1:1)"]
+            direction TB
+            ShowHeader --> ClickMessIcon[Click Icon Messenger trên Header]
+            ClickMessIcon --> FetchInboxList[("(Query DB: Lấy Danh sách Lịch sử Trò chuyện)")]
+            FetchInboxList --> DisplayInboxUI["Hiển thị Danh sách Chat + Badge Tin chưa đọc"]
+            
+            DisplayInboxUI --> SelectChatRoom[Chọn 1 Cuộc trò chuyện / Mở từ Accept Request]
+            OpenChatRoom --> SelectChatRoom
+            
+            SelectChatRoom --> FetchMsgHistory[("(Query DB: Lấy Lịch sử Tin nhắn)")]
+            FetchMsgHistory --> RenderChatBox["Renders Nội dung Chat + Input nhập tin"]
+            
+            RenderChatBox --> UserSendMsg[Nhập tin nhắn & Bấm Gửi]
+            UserSendMsg --> SaveMsgDB[("(Lưu Message vào DB: IsRead = False)")]
+            
+            SaveMsgDB --> PartnerOnline{Đối tác đang mở Box Chat?}
+            PartnerOnline -- Có --> PushRealtimeMsg["SignalR: Bắn tin nhắn trực tiếp lên màn hình"]
+            PushRealtimeMsg --> MarkMsgRead[("(Cập nhật DB: IsRead = True)")]
+            
+            PartnerOnline -- Không --> TriggerMsgNoti["Kích hoạt Notification Tin nhắn mới"]
+        end
+
+        %% SUBGRAPH 3: HỆ THỐNG THÔNG BÁO (ICON CHUÔNG)
+        subgraph NOTIFICATION ["3. HỆ THỐNG THÔNG BÁO (ICON CHUÔNG)"]
+            direction TB
+            TriggerMsgNoti --> DispatchNoti
+            
+            %% Các sự kiện khác đẩy về Chuông
+            SystemEvents["Sự kiện: Smart Match %, Bài đăng được duyệt / Upvote, Yêu cầu Chat"] --> DispatchNoti["Phân loại & Lưu Notification vào DB"]
+            
+            DispatchNoti --> CheckUserOnline{User nhận đang Online?}
+            CheckUserOnline -- Có --> SignalRPushNoti["SignalR: Push Thông báo tức thì"]
+            CheckUserOnline -- Không --> FCM_Push["Push Noti qua Firebase (FCM)"]
+            
+            SignalRPushNoti --> UpdateBellBadge["Hiển thị Toast & Cập nhật Badge Icon Chuông (+1)"]
+            FCM_Push --> UpdateBellBadge
+        end
+
+        %% SUBGRAPH 4: INTERACTION & DEEP LINKING
+        subgraph ACTION ["4. TƯƠNG TÁC THÔNG BÁO"]
+            direction TB
+            ShowHeader --> ClickBellIcon[Click Icon Chuông trên Header]
+            ClickBellIcon --> FetchNotiList[("(Query DB: Lấy Danh sách Thông báo)")]
+            FetchNotiList --> DisplayNotiUI["Hiển thị Popup Thông báo"]
+            UpdateBellBadge -. Tự động cập nhật .-> DisplayNotiUI
+            
+            DisplayNotiUI --> UserClickItem{User Click vào 1 Thông báo?}
+            
+            UserClickItem -- Thông báo Chat / Request --> LinkChat["Mở Màn hình Chat / Danh sách Yêu cầu"]
+            UserClickItem -- Thông báo Match % --> LinkMatch["Chuyển hướng Màn hình Radar Matching"]
+            UserClickItem -- Thông báo Bài đăng --> LinkPost["Chuyển hướng Màn hình Chi tiết Bài đăng"]
+            
+            LinkChat --> MarkNotiRead[("(Cập nhật DB: Notification IsRead = True)")]
+            LinkMatch --> MarkNotiRead
+            LinkPost --> MarkNotiRead
+            
+            MarkNotiRead --> ResetBellBadge["Cập nhật lại Badge số dư trên Icon Chuông"]
+            ResetBellBadge --> EndFlow([Hoàn tất Luồng])
+        end
+
+        %% CÁC LUỒNG XỬ LÝ LỖI / XỬ LÝ MẤT MẠNG
+        ConnectSignalR -. Mất kết nối .-> AutoReconnect["SignalR Auto-Reconnect"]
+        AutoReconnect -. Kết nối lại thành công .-> ConnectSignalR
+
+        %% Apply Styling Classes
+        classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
+        classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
+        classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
+        classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+        classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
+        classDef alert fill:#faf5ff,stroke:#a855f7,color:#6b21a8;
+
+        class Start,EndFlow startEnd;
+        class ReceiverChoice,PartnerOnline,CheckUserOnline,UserClickItem decision;
+        class ShowHeader,ConnectSignalR,UserAction,SendReq,PushReqNoti,OpenChatRoom,ClickMessIcon,FetchInboxList,DisplayInboxUI,SelectChatRoom,FetchMsgHistory,RenderChatBox,UserSendMsg,PushRealtimeMsg,TriggerMsgNoti,SystemEvents,DispatchNoti,SignalRPushNoti,FCM_Push,UpdateBellBadge,ClickBellIcon,FetchNotiList,DisplayNotiUI,LinkChat,LinkMatch,LinkPost,ResetBellBadge process;
+        class EndReject,AutoReconnect error;
+        class SaveReqDB,AcceptReq,RejectReq,SaveMsgDB,MarkMsgRead,MarkNotiRead db;
+    </div>
+</div>
+
+</body>
+</html>
