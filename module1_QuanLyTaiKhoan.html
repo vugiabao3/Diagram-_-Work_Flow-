@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Flow - Module 1</title>
+    <title>System Flow - Module 1: Auth & User Profile Management</title>
     <!-- Import Mermaid.js -->
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
@@ -13,9 +13,9 @@
             flowchart: {
                 useMaxWidth: true,
                 htmlLabels: true,
-                curve: 'basis', // Đường cong uốn lượn mượt mà, không cắt ngang hộp
-                nodeSpacing: 25, // Khoảng cách ngang tối ưu giữa các nút
-                rankSpacing: 35  // Khoảng cách đứng tối ưu giữa các tầng
+                curve: 'basis',
+                nodeSpacing: 30,
+                rankSpacing: 40
             }
         });
     </script>
@@ -101,119 +101,118 @@
 
 <div class="container">
     <h1>SƠ ĐỒ SYSTEM FLOW - MODULE 1</h1>
-    <p class="subtitle">Authentication, Welcome Bonus, User Profile & Post Classifier</p>
+    <p class="subtitle">Xác thực Tài khoản, Điểm Uy tín Khởi tạo & Quản lý Profile / Nhu cầu Cá nhân</p>
 
     <div class="mermaid">
     flowchart TB
-        Start([Mở App]) --> CheckAuth{Đã đăng nhập?}
+        Start([Mở Ứng Dụng]) --> CheckAuth{Đã đăng nhập?}
 
         %% SUBGRAPH 1: AUTHENTICATION
-        subgraph AUTH ["1. Authentication"]
+        subgraph AUTH ["1. Authentication (Xác thực)"]
             direction TB
             CheckAuth -- Chưa --> AuthChoice{Chọn Thao Tác}
             
-            AuthChoice -- Đăng ký --> Reg_In[Nhập thông tin Email/Pass]
+            AuthChoice -- Đăng ký --> Reg_In[Nhập Email .edu.vn & Mật khẩu]
             Reg_In --> Reg_Val{Regex Check Email .edu.vn}
-            Reg_Val -- Sai --> Reg_Err[Báo lỗi định dạng]
+            Reg_Val -- Sai --> Reg_Err[Báo lỗi định dạng Email]
             Reg_Err -. Thử lại .-> Reg_In
-            Reg_Val -- Đúng --> Reg_DB[(Lưu User DB)]
+            Reg_Val -- Đúng --> Reg_DB[(Lưu User mới vào DB)]
 
-            AuthChoice -- Đăng nhập --> Log_In[Nhập Email & Pass]
+            AuthChoice -- Đăng nhập --> Log_In[Nhập Email & Mật khẩu]
             Log_In --> Log_Val{Xác thực thông tin}
-            Log_Val -- Sai --> Log_Err[Báo lỗi đăng nhập]
+            Log_Val -- Sai --> Log_Err[Báo lỗi Đăng nhập]
             Log_Err -. Thử lại .-> Log_In
             Log_Val -- Đúng --> GenJWT[Tạo JWT Token]
         end
 
-        %% SUBGRAPH 2: WELCOME BONUS (CỘNG 100 ĐIỂM AUTO)
+        %% SUBGRAPH 2: WELCOME BONUS AUTO
         subgraph BONUS ["2. Welcome Bonus Auto"]
             direction TB
-            Reg_DB --> InitBonus[Gán ReputationPoint = 100]
-            InitBonus --> Bonus_DB[(Ghi lịch sử: +100 Welcome Bonus)]
+            Reg_DB --> InitBonus[Gán Điểm Uy Tín = 100 PTS]
+            InitBonus --> Bonus_DB[(Ghi lịch sử: +100 PTS Welcome Bonus)]
         end
 
-        %% Chuyển tiếp sau Đăng ký & Đăng nhập thành công
+        %% Chuyển tiếp sau Đăng ký & Đăng nhập
         Bonus_DB --> GenJWT
-        GenJWT --> SaveSession[Lưu Token & Role vào Session/Storage]
+        GenJWT --> SaveSession[Lưu Token & User Info vào Session/LocalStorage]
 
-        CheckAuth -- Rồi --> Home[Campus Feed]
-        SaveSession --> Home
+        CheckAuth -- Rồi --> DashBoard[Trang Chủ / App Screen]
+        SaveSession --> DashBoard
 
-        %% SUBGRAPH 3: USER PROFILE
-        subgraph PROFILE ["3. User Profile & Matching Vector"]
+        %% SUBGRAPH 3: PROFILE & DEMAND VECTOR MANAGEMENT
+        subgraph PROFILE ["3. Quản lý Profile & Vector Nhu Cầu"]
             direction TB
-            Home --> ProfileNav[Vào Profile]
-            ProfileNav --> ProfChoice{Chọn Thao Tác}
+            DashBoard --> ProfileNav[Vào Màn hình Profile]
+            ProfileNav --> ProfChoice{Chọn Chức Năng}
 
-            ProfChoice -- Xem Profile --> ViewProf[Hiển thị Profile & 100 Điểm Uy Tín]
-            ViewProf -. Quay lại .-> Home
+            %% 3.1 Xem thông tin
+            ProfChoice -- Xem Profile --> ViewProf[Hiển thị Profile: Avatar, Họ tên, Điểm uy tín, Lịch sử đóng góp]
+            ViewProf -. Quay lại .-> DashBoard
 
-            ProfChoice -- Sửa Profile --> Edit_In[Nhập Profile / Avatar / Zalo]
-            Edit_In --> Edit_Val{Check dữ liệu}
-            Edit_Val -- Sai --> Edit_Err[Báo lỗi dữ liệu]
+            %% 3.2 Chỉnh sửa Profile & Avatar
+            ProfChoice -- Sửa Profile / Avatar --> Edit_In[Cập nhật Họ tên, SĐT, Zalo, Chọn Avatar]
+            Edit_In --> CheckImg{Có đổi Avatar?}
+            CheckImg -- Có --> UploadCloud[Upload Avatar lên Cloudinary/S3]
+            UploadCloud --> GetImgUrl[Nhận URL Ảnh từ Cloud]
+            GetImgUrl --> Edit_Val{Check Dữ liệu}
+            CheckImg -- Không --> Edit_Val
+            Edit_Val -- Sai --> Edit_Err[Báo lỗi Dữ liệu]
             Edit_Err -. Thử lại .-> Edit_In
-            Edit_Val -- Đúng --> Edit_DB[(Lưu Profile DB)]
-            Edit_DB -. Hoàn tất .-> Home
+            Edit_Val -- Đúng --> Edit_DB[(Cập nhật Profile DB)]
+            Edit_DB -. Hoàn tất .-> DashBoard
 
-            ProfChoice -- Vector Nhu Cầu --> Vector_In[Chọn môn học, Lịch rảnh, Trọ...]
-            Vector_In --> Vector_Proc[Chuẩn hóa Cấu trúc Vector]
-            Vector_Proc --> Vector_DB[(Lưu Vector DB)]
-            Vector_DB -. Hoàn tất .-> Home
+            %% 3.3 Thu thập & Cập nhật Vector Nhu Cầu
+            ProfChoice -- Thiết lập Vector Nhu cầu --> Vector_In[Nhập Môn học, Lịch rảnh, Thói quen trọ, Ngân sách...]
+            Vector_In --> Vector_Proc[Cấu trúc hóa Vector Nhu cầu]
+            Vector_Proc --> Vector_DB[(Lưu/Cập nhật Vector DB)]
+            Vector_DB -. Hoàn tất .-> DashBoard
 
-            ProfChoice -- Đổi Pass --> Pass_In[Nhập Pass cũ & mới]
-            Pass_In --> Pass_Val{Check mật khẩu}
-            Pass_Val -- Sai --> Pass_Err[Báo lỗi mật khẩu]
+            %% 3.4 Đổi Mật Khẩu
+            ProfChoice -- Đổi Mật khẩu --> Pass_In[Nhập Mật khẩu hiện tại & Mật khẩu mới]
+            Pass_In --> Pass_Val{Xác nhận Mật khẩu cũ}
+            Pass_Val -- Sai --> Pass_Err[Báo lỗi Mật khẩu không đúng]
             Pass_Err -. Thử lại .-> Pass_In
-            Pass_Val -- Đúng --> Pass_DB[(Lưu Password DB)]
-            Pass_DB -. Hoàn tất .-> Home
+            Pass_Val -- Đúng --> Pass_DB[(Lưu Mật khẩu mới vào DB)]
+            Pass_DB -. Hoàn tất .-> DashBoard
 
-            ProfChoice -- Logout --> Logout[Đăng xuất]
-            Logout --> ClearSession[Xóa JWT / Clear Session]
+            %% 3.5 Đăng xuất
+            ProfChoice -- Đăng xuất --> Logout[Xóa JWT / Clear Session Storage]
         end
 
-        ClearSession -. Quay lại .-> AuthChoice
+        Logout -. Trở về .-> AuthChoice
 
-        %% SUBGRAPH 4: BÀI ĐĂNG & THUẬT TOÁN PHÂN LOẠI
-        subgraph POSTS ["4. Đăng bài & Rule-based Classification"]
+        %% SUBGRAPH 4: MY POSTS MANAGEMENT
+        subgraph MY_POSTS ["4. Quản lý Bài đăng cá nhân"]
             direction TB
-            Home --> PostNav[Đăng bài mới]
-            PostNav --> Post_In[Nhập Tiêu đề & Nội dung]
-            Post_In --> HasCategory{Có chọn Loại bài?}
+            ProfileNav --> MyPostsNav[Xem Danh sách bài đã đăng]
+            MyPostsNav --> PostActionChoice{Chọn Thao Tác}
 
-            HasCategory -- Có --> CustomType[Gán theo Loại người dùng chọn]
-            
-            HasCategory -- Không --> RuleEngine[Backend: Quét Từ khóa bằng Regex]
-            RuleEngine --> CheckRule{Nội dung chứa từ khóa?}
+            PostActionChoice -- Sửa Bài --> EditPost_In[Sửa Tiêu đề / Nội dung bài viết]
+            EditPost_In --> EditPost_DB[(Cập nhật Bài đăng DB)]
+            EditPost_DB -. Hoàn tất .-> MyPostsNav
 
-            CheckRule -- "tìm bạn học, ghép nhóm, môn, thi, đồ án" --> TypeStudy[Gán loại: Tab Tìm bạn học]
-            CheckRule -- "phòng trọ, ở ghép, giá phòng, ban công" --> TypeRoom[Gán loại: Tab Tìm trọ]
-            CheckRule -- Không khớp từ khóa nào --> TypeGeneral[Gán loại: Feed chung]
-
-            CustomType --> SavePostDB[(Lưu Bài đăng & Category vào DB)]
-            TypeStudy --> SavePostDB
-            TypeRoom --> SavePostDB
-            TypeGeneral --> SavePostDB
-            
-            SavePostDB --> RefreshFeed[Cập nhật Feed chung & Tab tương ứng]
-            RefreshFeed -. Hoàn tất .-> Home
+            PostActionChoice -- Xóa Bài --> ConfirmDelete{Xác nhận Xóa?}
+            ConfirmDelete -- Có --> DeletePost_DB[(Đánh dấu Xóa / Delete DB)]
+            ConfirmDelete -- Hủy --> MyPostsNav
+            DeletePost_DB -. Hoàn tất .-> MyPostsNav
         end
 
-        %% Apply Classes
+        %% Apply Styling Classes
         classDef startEnd fill:#0f172a,stroke:#0f172a,color:#fff,font-weight:bold;
         classDef process fill:#f0f9ff,stroke:#0288d1,color:#0369a1;
         classDef decision fill:#fefce8,stroke:#eab308,color:#854d0e;
         classDef error fill:#fef2f2,stroke:#ef4444,color:#991b1b;
         classDef db fill:#f0fdf4,stroke:#22c55e,color:#166534;
         classDef bonus fill:#faf5ff,stroke:#a855f7,color:#6b21a8;
-        classDef algo fill:#fff7ed,stroke:#ea580c,color:#9a3412;
+        classDef cloud fill:#fff7ed,stroke:#ea580c,color:#9a3412;
 
         class Start startEnd;
-        class CheckAuth,AuthChoice,Reg_Val,Log_Val,ProfChoice,Edit_Val,Pass_Val,HasCategory,CheckRule decision;
-        class Home,Reg_In,Log_In,GenJWT,SaveSession,ProfileNav,ViewProf,Edit_In,Pass_In,Logout,ClearSession,Vector_In,Vector_Proc,PostNav,Post_In,CustomType,TypeStudy,TypeRoom,TypeGeneral,RefreshFeed process;
-        class Reg_DB,Edit_DB,Pass_DB,Vector_DB,SavePostDB db;
+        class CheckAuth,AuthChoice,Reg_Val,Log_Val,ProfChoice,CheckImg,Edit_Val,Pass_Val,PostActionChoice,ConfirmDelete decision;
+        class DashBoard,Reg_In,Log_In,GenJWT,SaveSession,ProfileNav,ViewProf,Edit_In,GetImgUrl,Vector_In,Vector_Proc,Pass_In,Logout,MyPostsNav,EditPost_In process;
+        class Reg_DB,Edit_DB,Vector_DB,Pass_DB,EditPost_DB,DeletePost_DB db;
         class Reg_Err,Log_Err,Edit_Err,Pass_Err error;
         class InitBonus,Bonus_DB bonus;
-        class RuleEngine algo;
+        class UploadCloud cloud;
     </div>
 </div>
 
