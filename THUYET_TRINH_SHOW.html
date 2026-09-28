@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitching Master 2026 - Chi Tiết Thuật Toán & Hệ Thống Campus Ecosystem</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg-dark: #030712;
+      --bg-card: #0b1329;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-neon: rgba(0, 242, 254, 0.4);
+      --accent-neon: #00f2fe;
+      --accent-green: #10b981;
+      --accent-purple: #a855f7;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); line-height: 1.6; padding: 24px; }
+
+    header {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px 32px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .brand h1 { font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #00f2fe, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand p { font-size: 13px; color: var(--text-muted); }
+
+    .tech-stack-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #cbd5e1; }
+    .pill i { margin-right: 6px; color: var(--accent-neon); }
+
+    /* LAYOUT FULL WIDTH 1 CỘT TRÀN MÀN HÌNH */
+    .container-full { 
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .section-title { font-size: 16px; font-weight: 700; color: var(--accent-neon); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+
+    .solution-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+    .solution-card:hover { border-color: var(--border-neon); box-shadow: 0 0 20px rgba(0, 242, 254, 0.12); }
+    .solution-card h3 { font-size: 18px; color: #fff; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .solution-card .pain-point { font-size: 13.5px; color: var(--accent-red); margin-bottom: 12px; font-weight: 500; }
+    .solution-card .solve { font-size: 14px; color: #cbd5e1; margin-bottom: 8px; }
+
+    .algo-box {
+      background: rgba(168, 85, 247, 0.08);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .algo-box h5 { font-size: 12px; color: #c084fc; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+    .algo-box code { font-family: var(--font-code); font-size: 13px; color: #e9d5ff; display: block; white-space: pre-wrap; line-height: 1.6; }
+
+    .vector-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+      gap: 10px; 
+      margin: 10px 0; 
+      list-style: none; 
+      font-size: 13px; 
+      color: #a7f3d0; 
+    }
+    .vector-grid li { background: rgba(16, 185, 129, 0.08); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 8px; }
+
+    .tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
+    .tag-algo { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-rule { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>Campus Ecomsystem Mini</h1>
+      <p>Bản Thuyết Trình Chi Tiết Thuật Toán Lõi & Luồng Hệ Thống Full-Width</p>
+    </div>
+    
+    
+    <div class="tech-stack-pills">
+      <div class="pill"><i class="fa-brands fa-microsoft"></i> Backend: C# .NET Core</div>
+      <div class="pill"><i class="fa-brands fa-react"></i> Frontend: ReactJS</div>
+      <div class="pill"><i class="fa-solid fa-database"></i> DB: SQL Server</div>
+      <div class="pill"><i class="fa-solid fa-bolt"></i> Realtime: SignalR Hub</div>
+    </div>
+  </header>
+  Các Nỗi Phiền Của Sinh Viên :
+  <ul class="vector-grid">
+        <li><i class="fa-solid fa-check"></i> 1. Tìm Bạn Ở Ghép & Tìm Học Nhóm mà Không phù hợp Sở thích , sinh hoạt , mục tiêu </li>
+        <li><i class="fa-solid fa-check"></i> 2. Đổi Sách Không Cần Dùng Nữa Mà Không Muốn Mất Tiền Mua sách mới  & Sợ Tài Liệu Của Mình Bị Phát Tán Tràn Lan Trên Mạng </li>
+        <li><i class="fa-solid fa-check"></i> 3. Sơ đồ của mình người khác lấy mất </li>
+        <li><i class="fa-solid fa-check"></i>  4. Các  bài viết Spam, bài viết lừa đảo </li>
+        <li><i class="fa-solid fa-check"></i> 5. Bỏ lỡ các thông báo quan trọng </li>
+        <li><i class="fa-solid fa-check"></i> 6. ĐÓng góp cho cộng đồng mà không được ghi nhận , cộng điểm </li>
+        
+       
+      </ul>
+
+  <div class="container-full">
+    <div class="section-title"><i class="fa-solid fa-code-branch"></i> 6 TÍNH NĂNG VÀ THUẬT TOÁN CỐT LÕI HỆ THỐNG ĐỂ GIẢI QUYẾT 6 NỖI PHIỀN: </div>
+
+    <!-- 1. TÌM BẠN Ở GHÉP & CẠ HỌC NHÓM -->
+    <div class="solution-card">
+      <h3>1. Tìm Bạn Ở Ghép & Cạ Học Nhóm <span class="tag tag-algo">Cosine Similarity</span></h3>
+      <div class="pain-point"><i class="fa-solid fa-triangle-exclamation"></i> Nỗi phiền: Sốc văn hóa, lệch lịch sinh hoạt, xung đột lối sống khi ở ghép hoặc học nhóm.</div>
+      <div class="solve"><strong>Chuẩn hóa Vector 4 chiều A = [x_1, x_2, x_3, x_4]:</strong></div>
+      <div class="solve"><strong>Chuẩn hóa Vector 4 chiều B = [x_1, x_2, x_3, x_4]:</strong></div>
+
+      <ul class="vector-grid">
+        <li><i class="fa-solid fa-check"></i> x_1- Thói quen : Giờ ngủ , Thức đêm , Hút thuốc ,..</li>
+        <li><i class="fa-solid fa-check"></i> x_2 - Mục Tiêu : Đạt A Giải tích , Đạt A Đại Số ,..</li>
+        <li><i class="fa-solid fa-check"></i> x_3 - Vị trí địa lý : Gần nhau : Xây Dựng Hà Nội </li>
+        <li><i class="fa-solid fa-check"></i> x_4 - Mức trọ muốn thuê : 2-3-4 triệu </li>
+       
+      </ul>
+      <div class="algo-box">
+        <h5>Tính toán độ tương đồng & Cách dùng:</h5>
+        <code>Similarity(A, B) = (A · B) / (||A|| * ||B||)</code>
+        <code>Ví dụ: Cosine(A, B) = 0.85 => Đạt 85% khớp tính cách.</code>
+        <span style="font-size: 12px; color: var(--accent-neon); margin-top: 8px; display: block;">
+          👉 <strong>Dùng ở đâu / Như thế nào:</strong> Chạy ngầm trong Background Task C#. Khi sinh viên bấm "Tìm bạn", hệ thống tính Vector với toàn bộ DB. Nếu Độ tương đồng $\ge 80\%$, bắn SignalR + Push Notification kết nối hai người.
+        </span>
+      </div>
+    </div>
+
+    <!-- 2. MUA BÁN GIÁO TRÌNH & CHIA SẺ ĐỀ THI -->
+    <div class="solution-card">
+      <h3>2. Đổi Sách Vòng Tròn & Watermark Tài Liệu <span class="tag tag-algo">Graph Matching Loop & Dynamic Watermark</span></h3>
+      <div class="pain-point"><i class="fa-solid fa-triangle-exclamation"></i> Nỗi phiền: Tốn tiền mua sách cũ chỉ dùng 1 kỳ; PDF bị leak đi bán chuộc lợi cá nhân.</div>
+      <div class="solve"><strong>1. Đổi sách vòng tròn 0đ (Graph Matching Loop):</strong> Tự động phát hiện chuỗi trao đổi A(Có Giải tích , Cần Triết) --> B(Có Triết , Cần Đại Số ) --> C(Có Đại Số , Cần Giải Tích )</div>
+      <div class="solve"><strong>2. Dynamic PDF Watermarking (C# Engine):</strong> Trích xuất thông tin người tải chèn vào file.</div>
+      <div class="algo-box">
+        <h5>Cơ chế chèn chìm bảo mật PDF:</h5>
+        <code>[Trang PDF gốc] + C# iTextSharp Engine </code>
+        <code>=> Đóng dấu chìm: "Bản quyền thuộc [Tên + MSSV: 20220001 + IP + Timestamp]"</code>
+        <code>=> Tọa độ X,Y xoay góc -45 độ, Opacity 0.2 ẩn bên dưới nội dung.</code>
+      </div>
+    </div>
+
+    <!-- 3. ĐỒ THẤT LẠC (LOST & FOUND) -->
+    <div class="solution-card">
+      <h3>3. Đồ Thất Lạc (Lost & Found) <span class="tag tag-algo">Haversine & Quiz Lock</span></h3>
+      <div class="pain-point"><i class="fa-solid fa-triangle-exclamation"></i> Nỗi phiền: Mất đồ bị trôi tin trên MXH; kẻ xấu giả danh "nhận vơ" ví, tai nghe, thẻ xe.</div>
+      <div class="solve"><strong>Xác minh 2 tầng triệt để:</strong></div>
+      <div class="algo-box">
+        <h5>Tầng 1 - Xác minh khoảng cách gần (Công thức Haversine):</h5>
+        <code>d = 2R * arcsin( sqrt( sin²(Δlat/2) + cos(lat1)*cos(lat2)*sin²(Δlng/2) ) )</code>
+        <code>=> Tính chính xác khoảng cách theo đường chim bay giữa Vị trí mất và Vị trí nhặt (R = 6371km). Nếu Distance <= 500m => Đánh dấu "Cùng Khu Vực Thất Lạc".</code>
+        <h5 style="margin-top: 12px;">Tầng 2 - Xác minh Quiz chính chủ (Quiz Verification):</h5>
+        <code>Người nhặt tạo Câu hỏi bí mật (VD: "Móc khóa có hình gì?") </code>
+        <code>=> Người mất trả lời ĐÚNG -> Hệ thống mới mở Khung Chat Real-time 1:1.</code>
+      </div>
+    </div>
+
+    <!-- 4. CHỐNG SPAM & BẢO MẬT DỮ LIỆU -->
+    <div class="solution-card">
+      <h3>4. Chống Spam, Seeding & Lừa Đảo <span class="tag tag-rule">Rate Limiter</span></h3>
+      <div class="pain-point"><i class="fa-solid fa-triangle-exclamation"></i> Nỗi phiền: Rác thông tin, seeding trọ ảo, lừa đảo cọc tiền trên group Facebook.</div>
+      <div class="solve"><strong>Giải pháp:</strong> Bắt buộc Email `.edu.vn` + Middleware Rate Limiting chặn Spam từ tầng API Backend C#.</div>
+    </div>
+
+    <!-- 5. REALTIME COMMUNICATION & NOTIFICATION -->
+    <div class="solution-card">
+      <h3>5. Chat Real-time & Hệ Thống Chuông Thông Báo <span class="tag tag-algo">SignalR Hub</span></h3>
+      <div class="pain-point"><i class="fa-solid fa-triangle-exclamation"></i> Nỗi phiền: Mất kết nối, bỏ lỡ tin nhắn và thông báo quan trọng khi trao đổi.</div>
+      <div class="solve"><strong>Kết nối Real-time qua C# SignalR Websocket:</strong></div>
+      <div class="algo-box">
+        <h5>Các kịch bản Bắn Notification Tức Thì:</h5>
+        <code>1. Notification Matching Thành Công: Bắn thông báo khi Cosine Similarity >= 80%.</code>
+        <code>2. Notification Tin Nhắn Mới: Mở SignalR Channel khi Quiz xác minh đúng.</code>
+        <code>3. Notification Bài Đăng Bị Report / Cảnh Báo Spam: Thông báo bị trừ điểm uy tín.</code>
+      </div>
+    </div>
+
+    <!-- 6. TÍCH / PHẠT ĐIỂM UY TÍN 3 TẦNG & LEADERBOARD -->
+    <div class="solution-card">
+      <h3>6. Tích/Phạt Điểm Uy Tín 3 Tầng & Bảng Xếp Hạng <span class="tag tag-rule">C# System Rules</span></h3>
+      <div class="pain-point"><i class="fa-solid fa-triangle-exclamation"></i> Nỗi phiền: Không có cơ chế duy trì văn hóa lành mạnh và vinh danh người tốt.</div>
+      <div class="solve"><strong>Bảng Quy Tắc Tích / Phạt Điểm Tự Động:</strong></div>
+      <div class="algo-box">
+        <h5>Cơ chế Tích Điểm (+):</h5>
+        <code>- Trả đồ thất lạc thành công: +30 điểm</code>
+        <code>- Chia sẻ tài liệu PDF hữu ích: +10 đến +30 điểm</code>
+        <code>- Nhận đánh giá 5★ từ bạn ở ghép/học nhóm: +10 điểm</code>
+        
+        <h5 style="margin-top: 10px;">Cơ chế Phạt Điểm (-) & Khóa Tài Khoản 3 Tầng:</h5>
+        <code>Tầng 1 (C# System Rules): Đăng > 3 bài/phút (-10p) | Chat > 10 tin/10s (Khóa Chat 1h)</code>
+        <code>Tầng 2 (Cộng đồng Evaluation): Bị người dùng Vote 1★ (-30p)</code>
+        <code>Tầng 3 (Admin Moderation): Admin duyệt bài Report vi phạm (-50p)</code>
+        <span style="font-size: 12px; color: #fca5a5; margin-top: 8px; display: block;">
+          🏆 <strong>Leaderboard:</strong> Sinh viên TOP điểm uy tín được gắn Badge "Sinh Viên Tiêu Biểu" & ưu tiên hiển thị bài đăng.
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
