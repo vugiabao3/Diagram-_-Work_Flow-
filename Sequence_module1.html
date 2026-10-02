@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sequence Diagram - Module 1</title>
+    <!-- Import Mermaid.js -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'neutral',
+            sequence: {
+                showSequenceNumbers: true,
+                actorMargin: 50,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                useMaxWidth: true
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border: 3px solid #cbd5e1;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 1400px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #0f172a;
+            text-align: center;
+            font-size: 2.2rem;
+            margin: 0 0 10px 0;
+            font-weight: 800;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 1.2rem;
+            margin: 0 0 30px 0;
+            font-weight: 600;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SƠ ĐỒ SEQUENCE DIAGRAM - MODULE 1</h1>
+    <p class="subtitle">Xác thực, Khởi tạo Uy tín, Quản lý Profile & Bài đăng</p>
+
+    <div class="mermaid">
+    sequenceDiagram
+        autonumber
+        actor U as User
+        participant C as Client (App/Web)
+        participant S as Server API
+        participant Cloud as Cloud Storage
+        participant DB as Database
+
+        %% 1. AUTHENTICATION & REGISTRATION
+        rect rgb(240, 249, 255)
+            note over U, DB: 1. ĐĂNG KÝ & KHỞI TẠO UY TÍN (WELCOME BONUS)
+            U->>C: Nhập Email (.edu) & Mật khẩu
+            C->>C: Kiểm tra Định dạng Email (Regex)
+            alt Email không hợp lệ
+                C-->>U: Hiển thị báo lỗi định dạng Email
+            else Email hợp lệ
+                C->>S: POST /api/auth/register (Email, Pass)
+                S->>DB: Kiểm tra Email đã tồn tại?
+                alt Email đã tồn tại
+                    DB-->>S: Tồn tại
+                    S-->>C: 400 Bad Request (Email duplicated)
+                    C-->>U: Báo lỗi: Email đã được sử dụng
+                else Email mới
+                    S->>DB: Lưu User mới vào DB
+                    DB-->>S: User Created ID
+                    S->>DB: Set Uy tín = 100 PTS & Ghi Log Bonus
+                    DB-->>S: Success
+                    S->>S: Tạo JWT Token
+                    S-->>C: 200 OK (JWT Token + User Info)
+                    C->>C: Lưu Token vào LocalStorage/Session
+                    C-->>U: Chuyển hướng tới Trang Chủ
+                end
+            end
+        end
+
+        %% 2. LOGIN FLOW
+        rect rgb(254, 252, 232)
+            note over U, DB: 2. ĐĂNG NHẬP (LOGIN)
+            U->>C: Nhập Email & Mật khẩu
+            C->>S: POST /api/auth/login (Email, Pass)
+            S->>DB: Truy vấn User theo Email
+            DB-->>S: Thông tin User & Hashed Password
+            S->>S: Kiểm tra Mật khẩu
+            alt Mật khẩu sai
+                S-->>C: 401 Unauthorized (Invalid Credentials)
+                C-->>U: Báo lỗi: Sai email hoặc mật khẩu
+            else Mật khẩu đúng
+                S->>S: Tạo JWT Token
+                S-->>C: 200 OK (JWT Token)
+                C->>C: Lưu Token vào LocalStorage/Session
+                C-->>U: Chuyển hướng tới Trang Chủ
+            end
+        end
+
+        %% 3. PROFILE & DEMAND VECTOR MANAGEMENT
+        rect rgb(240, 253, 244)
+            note over U, DB: 3. CẬP NHẬT PROFILE & VECTOR NHU CẦU
+            
+            %% Update Profile & Avatar
+            opt Cập nhật Thông tin & Avatar
+                U->>C: Nhập Tên, SĐT, Zalo, Chọn Ảnh Avatar
+                alt Có thay đổi Avatar
+                    C->>Cloud: Upload File Ảnh
+                    Cloud-->>C: Trả về URL Ảnh mới
+                end
+                C->>S: PUT /api/user/profile (Info, Avatar URL)
+                S->>S: Validate dữ liệu đầu vào
+                alt Dữ liệu không hợp lệ
+                    S-->>C: 400 Bad Request
+                    C-->>U: Hiển thị lỗi dữ liệu
+                else Dữ liệu hợp lệ
+                    S->>DB: UPDATE Profile User
+                    DB-->>S: Success
+                    S-->>C: 200 OK (Updated Profile)
+                    C-->>U: Thông báo Cập nhật thành công
+                end
+            end
+
+            %% Update Vector Nhu Cau
+            opt Cập nhật Vector Nhu Cầu
+                U->>C: Nhập Môn học, Lịch rảnh, Trọ, Ngân sách
+                C->>S: POST /api/user/demand-vector (Data)
+                S->>S: Chuẩn hóa / Cấu trúc hóa Vector
+                S->>DB: SAVE/UPDATE Vector Nhu cầu
+                DB-->>S: Success
+                S-->>C: 200 OK
+                C-->>U: Báo cập nhật Vector thành công
+            end
+
+            %% Change Password
+            opt Đổi Mật Khẩu
+                U->>C: Nhập Mật khẩu cũ & Mật khẩu mới
+                C->>S: PUT /api/user/change-password (OldPass, NewPass)
+                S->>DB: Lấy Pass Hashed hiện tại
+                DB-->>S: Password Hash
+                S->>S: Kiểm tra Mật khẩu cũ
+                alt Mật khẩu cũ không khớp
+                    S-->>C: 400 Bad Request (Wrong Old Pass)
+                    C-->>U: Báo lỗi: Mật khẩu cũ không đúng
+                else Mật khẩu cũ khớp
+                    S->>DB: Hash Pass mới & UPDATE DB
+                    DB-->>S: Success
+                    S-->>C: 200 OK
+                    C-->>U: Thông báo Đổi Mật khẩu thành công
+                end
+            end
+        end
+
+        %% 4. MY POSTS MANAGEMENT
+        rect rgb(250, 245, 255)
+            note over U, DB: 4. QUẢN LÝ BÀI ĐĂNG CÁ NHÂN
+            U->>C: Mở danh sách bài đã đăng
+            C->>S: GET /api/user/posts
+            S->>DB: Query Bài đăng theo User ID
+            DB-->>S: Danh sách bài đăng
+            S-->>C: 200 OK (List Posts)
+            C-->>U: Hiển thị Danh sách bài viết
+
+            alt Chỉnh sửa Bài đăng
+                U->>C: Sửa Tiêu đề / Nội dung -> Bấm Lưu
+                C->>S: PUT /api/posts/{id} (Data)
+                S->>DB: UPDATE Post DB
+                DB-->>S: Success
+                S-->>C: 200 OK
+                C-->>U: Báo cập nhật bài viết thành công
+            else Xóa Bài đăng
+                U->>C: Bấm Xóa bài đăng -> Xác nhận Xóa
+                C->>S: DELETE /api/posts/{id}
+                S->>DB: Soft Delete Post (Set is_deleted = true)
+                DB-->>S: Success
+                S-->>C: 200 OK
+                C-->>U: Cập nhật lại DS Bài đăng
+            end
+        end
+    </div>
+</div>
+
+</body>
+</html>
